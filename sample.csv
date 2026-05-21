@@ -1,0 +1,6 @@
+order_id,customer_name,amount,is_paid,order_date
+1001,Alice Tan,129.50,true,2026-01-15
+1002,Budi Santoso,89.00,false,2026-01-16
+1003,Citra Dewi,245.75,true,2026-01-16
+1004,Dharma Putra,15.25,true,2026-01-17
+1005,Eka Wijaya,330.00,false,2026-01-18
