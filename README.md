@@ -30,6 +30,27 @@ pip install -e .
 
 > **Want it always available without activating a venv?** Install into your user environment instead: `pip install --user .` (run from the cloned repo). Then `csv2parquet` works from any shell.
 
+### Reactivating in a new shell session
+
+> **Note:** If you used the venv install above, you must reactivate it in every new terminal session before `csv2parquet` will be found. You do **not** need to reinstall — the venv persists on disk.
+>
+> Two equivalent options:
+>
+> ```bash
+> # Option 1 — activate by absolute path (works from any directory)
+> source /path/to/csv_to_parquet_enabler/.venv/bin/activate
+> ```
+>
+> ```bash
+> # Option 2 — cd into the repo first, then activate by relative path
+> cd /path/to/csv_to_parquet_enabler
+> source .venv/bin/activate
+> ```
+>
+> Once activated, run `csv2parquet` from whatever folder your CSV lives in. Run `deactivate` when you're done.
+>
+> This step is **not** needed if you installed with `pip install --user .` — that install is always on PATH.
+
 ## Usage
 
 After installing, run from **any folder** that contains a CSV:
