@@ -6,10 +6,12 @@ A tiny CLI that converts a CSV file into a Snappy-compressed Parquet file and em
 
 If your workflow is "CSV → Parquet → upload to S3 → run Athena DDL," this tool handles the first and third steps so you only have to do the upload yourself.
 
+You install this **once**, and then run `csv2parquet some_file.csv` from any directory on your machine — no need to copy the script around.
+
 ## Requirements
 
-- Python 3.8+
-- `pandas`, `pyarrow` (installed via `requirements.txt`)
+- Python 3.9+
+- `pandas`, `pyarrow` (installed automatically)
 
 ## Install
 
@@ -21,17 +23,27 @@ python -m venv .venv
 source .venv/bin/activate          # macOS/Linux
 # .venv\Scripts\activate           # Windows PowerShell
 
-pip install -r requirements.txt
+pip install -e .
 ```
+
+`pip install -e .` installs the package in editable mode and puts a `csv2parquet` command on your PATH (active whenever the venv is activated).
+
+> **Want it always available without activating a venv?** Install into your user environment instead: `pip install --user .` (run from the cloned repo). Then `csv2parquet` works from any shell.
 
 ## Usage
 
-```bash
-# Basic — writes sample.parquet and sample.sql next to the input
-python csv2parquet.py sample.csv
+After installing, run from **any folder** that contains a CSV:
 
+```bash
+# In whatever directory your CSV lives
+cd ~/data/2026-q1
+csv2parquet sales.csv
+# → writes sales.parquet and sales.sql right next to sales.csv
+```
+
+```bash
 # Custom output directory and Athena table name
-python csv2parquet.py data/sales.csv -o build/ -t sales_2026
+csv2parquet sales.csv -o build/ -t sales_2026
 ```
 
 ### CLI flags
@@ -42,9 +54,15 @@ python csv2parquet.py data/sales.csv -o build/ -t sales_2026
 | `-o`, `--output-dir` | Where to write the `.parquet` and `.sql` | same directory as the input |
 | `-t`, `--table` | Athena table name in the DDL | input filename (without extension) |
 
+### Quick smoke-test with the included sample
+
+```bash
+csv2parquet sample.csv
+```
+
 ## What you get
 
-Running `python csv2parquet.py sample.csv` produces two files:
+Running `csv2parquet sample.csv` produces two files alongside the input:
 
 **`sample.parquet`** — Snappy-compressed columnar data, Athena-ready.
 
@@ -80,6 +98,16 @@ The tool infers types via pandas and maps them to Athena/Hive types:
 | `object` (anything else) | `STRING` |
 
 If pandas reads a column as `object` (e.g., a date that wasn't auto-parsed), it lands as `STRING` in the DDL. Cast in your Athena queries as needed.
+
+## Don't want to install? Run the script directly
+
+If you'd rather not install anything, you can still run the script directly with an absolute path — no copy needed:
+
+```bash
+python /path/to/csv_to_parquet_enabler/csv2parquet.py /any/folder/data.csv
+```
+
+You'll need `pandas` and `pyarrow` available in whichever Python you invoke (`pip install -r requirements.txt`).
 
 ## Scope (intentional)
 
