@@ -4,6 +4,11 @@ __pycache__/
 venv/
 .env
 
+# Editable-install / build artifacts
+*.egg-info/
+build/
+dist/
+
 # Generated outputs (keep the sample inputs only)
 *.parquet
 *.sql
