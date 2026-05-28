@@ -38,12 +38,12 @@ pip install -e .
 >
 > ```bash
 > # Option 1 — activate by absolute path (works from any directory)
-> source /path/to/csv_to_parquet_enabler/.venv/bin/activate
+> source ~/Documents/repository/csv_to_parquet_extractor/.venv/bin/activate
 > ```
 >
 > ```bash
 > # Option 2 — cd into the repo first, then activate by relative path
-> cd /path/to/csv_to_parquet_enabler
+> cd ~/Documents/repository/csv_to_parquet_extractor
 > source .venv/bin/activate
 > ```
 >
