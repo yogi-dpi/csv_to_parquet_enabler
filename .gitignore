@@ -17,3 +17,9 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+
+# Local dev data
+dev/
+
+# Claude Code local settings
+.claude/settings.local.json
