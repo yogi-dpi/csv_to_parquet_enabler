@@ -10,35 +10,37 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+import pyarrow.parquet as pq
+from pyarrow import types
 
 
-PANDAS_TO_ATHENA = {
-    "int64": "BIGINT",
-    "Int64": "BIGINT",
-    "int32": "INT",
-    "Int32": "INT",
-    "int16": "SMALLINT",
-    "int8": "TINYINT",
-    "float64": "DOUBLE",
-    "float32": "FLOAT",
-    "bool": "BOOLEAN",
-    "boolean": "BOOLEAN",
-    "datetime64[ns]": "TIMESTAMP",
-    "object": "STRING",
-    "string": "STRING",
-}
-
-
-def athena_type(pandas_dtype) -> str:
-    name = str(pandas_dtype)
-    if name.startswith("datetime64"):
+def athena_type(arrow_type) -> str:
+    if types.is_int8(arrow_type):
+        return "TINYINT"
+    if types.is_int16(arrow_type):
+        return "SMALLINT"
+    if types.is_int32(arrow_type):
+        return "INT"
+    if types.is_int64(arrow_type):
+        return "BIGINT"
+    if types.is_float32(arrow_type):
+        return "FLOAT"
+    if types.is_float64(arrow_type):
+        return "DOUBLE"
+    if types.is_boolean(arrow_type):
+        return "BOOLEAN"
+    if types.is_timestamp(arrow_type):
         return "TIMESTAMP"
-    return PANDAS_TO_ATHENA.get(name, "STRING")
+    if types.is_date(arrow_type):
+        return "DATE"
+    if types.is_decimal(arrow_type):
+        return f"DECIMAL({arrow_type.precision},{arrow_type.scale})"
+    return "STRING"
 
 
-def build_ddl(table: str, dtypes: "pd.Series") -> str:
+def build_ddl(table: str, schema: "pq.ParquetSchema") -> str:
     columns = ",\n  ".join(
-        f"`{col}` {athena_type(dt)}" for col, dt in dtypes.items()
+        f"`{field.name}` {athena_type(field.type)}" for field in schema
     )
     return (
         f"CREATE EXTERNAL TABLE IF NOT EXISTS `{table}` (\n"
@@ -88,7 +90,8 @@ def main(argv=None) -> int:
 
     df = pd.read_csv(args.input)
     df.to_parquet(parquet_path, compression="snappy", index=False)
-    sql_path.write_text(build_ddl(table, df.dtypes))
+    schema = pq.read_schema(parquet_path)
+    sql_path.write_text(build_ddl(table, schema))
 
     print(f"wrote {parquet_path} ({len(df)} rows, {len(df.columns)} cols)")
     print(f"wrote {sql_path}")

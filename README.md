@@ -106,19 +106,23 @@ Replace `s3://<FILL-ME-IN>/` with the S3 prefix you upload the Parquet file to, 
 
 ## Type mapping
 
-The tool infers types via pandas and maps them to Athena/Hive types:
+The tool reads the Parquet file's schema (via pyarrow) and maps types to Athena/Hive types:
 
-| Pandas dtype | Athena type |
+| Parquet / Arrow type | Athena type |
 |---|---|
 | `int64` | `BIGINT` |
 | `int32` | `INT` |
-| `float64` | `DOUBLE` |
-| `float32` | `FLOAT` |
+| `int16` | `SMALLINT` |
+| `int8` | `TINYINT` |
+| `double` | `DOUBLE` |
+| `float` | `FLOAT` |
 | `bool` | `BOOLEAN` |
-| `datetime64[ns]` | `TIMESTAMP` |
-| `object` (anything else) | `STRING` |
+| `timestamp` | `TIMESTAMP` |
+| `date32` / `date64` | `DATE` |
+| `decimal128(p,s)` | `DECIMAL(p,s)` |
+| anything else | `STRING` |
 
-If pandas reads a column as `object` (e.g., a date that wasn't auto-parsed), it lands as `STRING` in the DDL. Cast in your Athena queries as needed.
+The DDL is generated from the actual Parquet schema, so it always matches what Athena will see when reading the file.
 
 ## Don't want to install? Run the script directly
 
