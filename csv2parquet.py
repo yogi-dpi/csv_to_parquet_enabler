@@ -6,12 +6,50 @@ Usage:
 """
 
 import argparse
+import re
 import sys
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
 import pyarrow.parquet as pq
 from pyarrow import types
+
+
+ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def downcast_integer_floats(df: "pd.DataFrame") -> None:
+    """In-place: convert float columns to nullable Int64 when every non-null
+    value is a whole number. Empty columns are left untouched (no signal to
+    downcast). Uses pandas' nullable Int64 so NaN-bearing columns survive.
+    """
+    for col in df.columns:
+        if df[col].dtype.kind != "f":
+            continue
+        non_null = df[col].dropna()
+        if non_null.empty:
+            continue
+        if (non_null % 1 == 0).all():
+            df[col] = df[col].astype("Int64")
+
+
+def convert_iso_date_columns(df: "pd.DataFrame") -> None:
+    """In-place: convert object columns whose non-null values all match
+    YYYY-MM-DD into Python date objects, so pyarrow writes them as date32.
+
+    Using Python date (not pandas datetime64[ns]) preserves out-of-range
+    sentinels like 9999-12-31 that overflow pandas' nanosecond timestamps.
+    """
+    for col in df.columns:
+        if df[col].dtype != object:
+            continue
+        non_null = df[col].dropna()
+        if non_null.empty:
+            continue
+        if not non_null.map(lambda v: isinstance(v, str) and bool(ISO_DATE_RE.match(v))).all():
+            continue
+        df[col] = df[col].map(lambda v: date.fromisoformat(v) if isinstance(v, str) else None)
 
 
 def athena_type(arrow_type) -> str:
@@ -89,6 +127,13 @@ def main(argv=None) -> int:
     sql_path = output_dir / f"{stem}.sql"
 
     df = pd.read_csv(args.input)
+    original_rows = len(df)
+    df = df.dropna(how="all").reset_index(drop=True)
+    dropped = original_rows - len(df)
+    if dropped:
+        print(f"dropped {dropped} fully-empty row(s)")
+    downcast_integer_floats(df)
+    convert_iso_date_columns(df)
     df.to_parquet(parquet_path, compression="snappy", index=False)
     schema = pq.read_schema(parquet_path)
     sql_path.write_text(build_ddl(table, schema))
