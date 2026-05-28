@@ -20,6 +20,7 @@ dist/
 
 # Local dev data
 dev/
+doc/
 
 # Claude Code local settings
 .claude/settings.local.json

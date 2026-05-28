@@ -104,6 +104,17 @@ TBLPROPERTIES ('parquet.compression'='SNAPPY');
 
 Replace `s3://<FILL-ME-IN>/` with the S3 prefix you upload the Parquet file to, then run the DDL in Athena.
 
+## Preprocessing pipeline
+
+Every CSV runs through these steps before Parquet is written:
+
+1. **Normalize column names** — strip BOM, trim whitespace, lowercase, replace any non-alphanumeric run with `_`, trim leading/trailing `_`. So `Mex Name` → `mex_name`, ` Entity ` → `entity`, `First Active Date (Incentive)` → `first_active_date_incentive`. The rename map is printed for sanity-checking.
+2. **Strip string values** — leading/trailing whitespace is trimmed on every text column so `' Sub acc '` becomes `'Sub acc'`. Casing is preserved.
+3. **Drop fully-empty rows** — rows where every column is empty are dropped (common Excel-export artifact).
+4. **Downcast integer floats** — float columns whose values are all whole numbers become `Int64` (so flag/id columns land as `BIGINT` instead of `DOUBLE`).
+5. **Detect date columns** — object columns whose non-null values all match `YYYY-MM-DD` or US-style `M/D/YYYY` become Python `date` objects (Parquet `date32` → Athena `DATE`). The output DDL always uses `YYYY-MM-DD`.
+   - **Strict mode:** if a column looks date-like (>= 50% of non-null values parse) but has some bad cells (e.g. `#REF!`, `DROP`, Excel serial numbers like `44722`, partial dates like `13-Nov`), the bad rows are printed with their CSV line numbers and the column is left as `STRING`. Fix the source and re-run.
+
 ## Type mapping
 
 The tool reads the Parquet file's schema (via pyarrow) and maps types to Athena/Hive types:
